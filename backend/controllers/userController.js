@@ -18,7 +18,6 @@ export const registerUser = async (req, res) => {
   res.status(201).json({ message: "User registered successfully" });
 };
 
-// Login User
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -32,13 +31,11 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// Get User Profile
 export const getUserProfile = async (req, res) => {
   const user = req.user;
   res.json(user);
 };
 
-// Update User
 export const updateUser = async (req, res) => {
   const user = req.user;
   const { name, profilePic } = req.body;
@@ -50,7 +47,6 @@ export const updateUser = async (req, res) => {
   res.json({ message: "User updated successfully", user: updatedUser });
 };
 
-// Delete User
 export const deleteUser = async (req, res) => {
   const user = req.user;
   await User.findByIdAndDelete(user._id);

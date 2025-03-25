@@ -1,5 +1,6 @@
 import QuizSession from "../models/Session.js";
 import generateLink from "../utils/generateLink.js";
+import Quiz from "../models/Quiz.js";
 
 // Create a new quiz session
 export const createSession = async (req, res) => {
@@ -46,7 +47,7 @@ export const getUserSessions = async (req, res) => {
 export const getSessionById = async (req, res) => {
   try {
     const { id } = req.params;
-    const session = await QuizSession.findById(id).populate("quizzes");
+    const session = await QuizSession.findById(id).populate("quizzes"); // This is where `quizzes` gets populated
 
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
