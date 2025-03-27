@@ -3,12 +3,57 @@ import generateLink from "../utils/generateLink.js";
 import Quiz from "../models/Quiz.js";
 
 // Create a new quiz session
+// export const createSession = async (req, res) => {
+//   try {
+//     const { title } = req.body;
+
+//     if (!title) {
+//       return res.status(400).json({ message: "Title is required" });
+//     }
+
+//     const session = new QuizSession({
+//       title,
+//       owner: req.user._id,
+//       quizzes: [],
+//     });
+
+//     await session.save();
+
+//     const sessionLink = generateLink(session._id);
+//     session.sessionLink = sessionLink;
+//     await session.save();
+
+//     res.status(201).json({
+//       message: "Quiz session created successfully",
+//       sessionLink,
+//       session,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
+// // Get all sessions for a particular user
+// export const getUserSessions = async (req, res) => {
+//   try {
+//     const sessions = await QuizSession.find({ owner: req.user._id });
+//     res.status(200).json(sessions);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
+// Create a new quiz session
 export const createSession = async (req, res) => {
   try {
     const { title } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
     const session = new QuizSession({
@@ -18,14 +63,11 @@ export const createSession = async (req, res) => {
     });
 
     await session.save();
-
-    const sessionLink = generateLink(session._id);
-    session.sessionLink = sessionLink;
+    session.sessionLink = generateLink(session._id);
     await session.save();
 
     res.status(201).json({
       message: "Quiz session created successfully",
-      sessionLink,
       session,
     });
   } catch (error) {
@@ -33,9 +75,13 @@ export const createSession = async (req, res) => {
   }
 };
 
-// Get all sessions for a particular user
+// Get user sessions
 export const getUserSessions = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const sessions = await QuizSession.find({ owner: req.user._id });
     res.status(200).json(sessions);
   } catch (error) {
