@@ -8,7 +8,7 @@ const Sidebar = () => {
         <ul>
           <li>
             <Link
-              href="/dashboard"
+              href="/"
               className="block py-2 px-4 rounded hover:bg-gray-800"
             >
               Home
@@ -24,7 +24,7 @@ const Sidebar = () => {
           </li>
           <li>
             <Link
-              href="/logout"
+              href="/login"
               className="block py-2 px-4 rounded hover:bg-gray-800"
             >
               Logout

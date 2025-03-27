@@ -29,6 +29,23 @@ export default function RegisterPage() {
     setShowPassword((prev) => !prev);
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError(null);
+
+  //   try {
+  //     const response = await api.post("/users/register", formData);
+  //     console.log("Registration Success:", response.data);
+  //     router.push("/login");
+  //   } catch (err: unknown) {
+  //     const axiosError = err as AxiosError<{ message: string }>;
+  //     setError(axiosError.response?.data?.message || "Registration failed.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -36,8 +53,13 @@ export default function RegisterPage() {
 
     try {
       const response = await api.post("/users/register", formData);
+
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token); // Save token
+      }
+
       console.log("Registration Success:", response.data);
-      router.push("/login");
+      router.push("/dashboard"); // Redirect to dashboard
     } catch (err: unknown) {
       const axiosError = err as AxiosError<{ message: string }>;
       setError(axiosError.response?.data?.message || "Registration failed.");

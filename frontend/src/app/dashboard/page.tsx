@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 
@@ -24,7 +24,8 @@ const Dashboard = () => {
       }
 
       try {
-        const response = await api.get("/users/me", {
+        const response = await api.get("/users/profile", {
+          // 👈 Fixed API endpoint
           headers: { Authorization: `Bearer ${token}` },
         });
         setUser(response.data);
@@ -52,7 +53,7 @@ const Dashboard = () => {
           </h1>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
               </CardHeader>
@@ -60,7 +61,7 @@ const Dashboard = () => {
                 <p>Name: {user?.name}</p>
                 <p>Email: {user?.email}</p>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </main>
       </div>
