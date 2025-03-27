@@ -222,10 +222,35 @@ export const editQuizInSession = async (req, res) => {
 };
 
 // Delete a session and its associated quizzes
+// export const deleteSession = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const session = await QuizSession.findOne({ _id: id, owner: req.user._id });
+
+//     if (!session) {
+//       return res
+//         .status(404)
+//         .json({ message: "Session not found or unauthorized" });
+//     }
+
+//     await Quiz.deleteMany({ sessionId: id });
+
+//     await session.deleteOne();
+
+//     res
+//       .status(200)
+//       .json({ message: "Session and associated quizzes deleted successfully" });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 export const deleteSession = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // ✅ Find session with correct owner
     const session = await QuizSession.findOne({ _id: id, owner: req.user._id });
 
     if (!session) {
@@ -234,14 +259,19 @@ export const deleteSession = async (req, res) => {
         .json({ message: "Session not found or unauthorized" });
     }
 
+    console.log(`Deleting session: ${id}`);
+
+    // ✅ Delete all quizzes related to session
     await Quiz.deleteMany({ sessionId: id });
 
-    await session.deleteOne();
+    // ✅ Delete session itself
+    await QuizSession.findByIdAndDelete(id);
 
     res
       .status(200)
       .json({ message: "Session and associated quizzes deleted successfully" });
   } catch (error) {
+    console.error("Error deleting session:", error);
     res.status(500).json({ message: error.message });
   }
 };

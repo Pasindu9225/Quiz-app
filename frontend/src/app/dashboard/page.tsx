@@ -5,15 +5,22 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
-import Modal from "@/components/Modal"; // ✅ Import modal component
+import Modal from "@/components/Modal";
+import { Trash2, Clipboard } from "lucide-react";
+import Link from "next/link";
 
 const Dashboard = () => {
+  type Session = {
+    _id: string;
+    title: string;
+    sessionLink: string;
+  };
+
   const [user, setUser] = useState<{ name: string; email: string } | null>(
     null
   );
-  const [sessions, setSessions] = useState<{ _id: string; title: string }[]>(
-    []
-  );
+  const [sessions, setSessions] = useState<Session[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [newSessionTitle, setNewSessionTitle] = useState("");
@@ -56,6 +63,7 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSessions(response.data);
+        console.log(sessions);
       } catch (error) {
         console.error("Error fetching sessions:", error);
       }
@@ -84,6 +92,30 @@ const Dashboard = () => {
     }
   };
 
+  // Delete session
+  const handleDeleteSession = async (sessionId: string) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this session?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/sessions/${sessionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setSessions(sessions.filter((session) => session._id !== sessionId));
+    } catch (error) {
+      console.error("Error deleting session:", error);
+    }
+  };
+
+  const handleCopySessionLink = (sessionLink: string) => {
+    navigator.clipboard.writeText(sessionLink);
+    alert("Session link copied to clipboard!");
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
@@ -97,18 +129,44 @@ const Dashboard = () => {
           </h1>
 
           <button
-            className="mt-6 px-4 py-2 bg-blue-500 text-white rounded"
+            className="mt-6 px-4 py-2 cursor-pointer bg-blue-500 text-white rounded"
             onClick={() => setModalOpen(true)}
           >
             Add Session
           </button>
 
+          {/* session card */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sessions.map((session) => (
-              <div key={session._id} className="p-4 border rounded shadow">
-                <h2 className="text-lg font-bold">{session.title}</h2>
-              </div>
-            ))}
+            <ul className="w-full">
+              {sessions.map((session) => (
+                <li key={session._id} className="mb-2">
+                  <Link href={`/session/${session._id}`}>
+                    <div className="p-4 border w-100 rounded shadow flex justify-between items-center">
+                      <h2 className="text-lg font-bold cursor-pointer">
+                        {session.title}
+                      </h2>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() =>
+                            handleCopySessionLink(session.sessionLink)
+                          }
+                          className="text-blue-500 cursor-pointer"
+                        >
+                          <Clipboard size={20} />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteSession(session._id)}
+                          className="text-red-500 cursor-pointer"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </main>
       </div>
@@ -125,7 +183,7 @@ const Dashboard = () => {
             className="w-full p-2 border rounded mb-4"
           />
           <button
-            className="w-full px-4 py-2 bg-blue-500 text-white rounded"
+            className="w-full px-4 py-2 cursor-pointer bg-blue-500 text-white rounded"
             onClick={handleCreateSession}
           >
             Create
