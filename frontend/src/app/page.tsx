@@ -29,7 +29,7 @@ const page = () => {
               {/* register button */}
               <a
                 className="inline-block rounded border border-indigo-600 bg-indigo-600 px-5 py-3 font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
-                href="api/users/register"
+                href="/register"
               >
                 Get Started
               </a>
