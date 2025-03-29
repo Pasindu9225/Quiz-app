@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import Modal from "@/components/quizmodal";
+import { Trash2, X, Edit2 } from "lucide-react"; // Added Edit and X for close icon
 
 interface Quiz {
   _id: string;
@@ -17,30 +19,64 @@ interface Session {
   quizzes: Quiz[];
 }
 
-interface QuizSessionProps {
-  sessionId: string;
-}
+export default function QuizSession() {
+  const params = useParams();
+  const router = useRouter();
+  const sessionId = params.id as string; // Grabs [id] from the URL
 
-export default function QuizSession({ sessionId }: QuizSessionProps) {
   const [session, setSession] = useState<Session | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [question, setQuestion] = useState("");
   const [answers, setAnswers] = useState(["", "", "", ""]);
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
-  const router = useRouter();
+  const [quizId, setQuizId] = useState(""); // Store the quizId for the quiz being edited
 
+  // Fetch session data
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.error("Session ID is missing!");
+      return;
+    }
+
     const fetchSession = async () => {
       try {
-        const { data } = await axios.get<Session>(`/api/sessions/${sessionId}`);
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Token not found, redirecting to login...");
+          router.push("/login");
+          return;
+        }
+
+        const { data } = await axios.get<Session>(
+          `http://localhost:5000/api/sessions/${sessionId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         setSession(data);
       } catch (error) {
         console.error("Error fetching session:", error);
       }
     };
+
     fetchSession();
   }, [sessionId]);
 
+  // Open modal and set quiz data for editing
+  const handleEditQuiz = (quiz: Quiz) => {
+    setQuestion(quiz.question);
+    setAnswers(quiz.answers);
+    setCorrectAnswerIndex(quiz.correctAnswerIndex);
+    setQuizId(quiz._id);
+    setEditMode(true); // Set to edit mode
+    setModalOpen(true); // Open modal
+  };
+
+  // Add a new quiz to the session
   const addQuiz = async () => {
     if (!question.trim() || answers.some((a) => !a.trim())) {
       console.error("Question and all answers must be filled");
@@ -48,108 +84,221 @@ export default function QuizSession({ sessionId }: QuizSessionProps) {
     }
 
     try {
-      const { data } = await axios.post<{ quiz: Quiz }>(
-        "/api/sessions/addQuiz",
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "http://localhost:5000/api/sessions/add-quiz",
         {
           sessionId,
           question,
           answers,
           correctAnswerIndex,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
+
+      // After successfully adding a quiz, update the session state
       setSession((prevSession) =>
         prevSession
-          ? { ...prevSession, quizzes: [...prevSession.quizzes, data.quiz] }
+          ? {
+              ...prevSession,
+              quizzes: [...prevSession.quizzes, response.data.quiz],
+            }
           : prevSession
       );
+
+      // Reset the form fields
       setQuestion("");
       setAnswers(["", "", "", ""]);
       setCorrectAnswerIndex(0);
+      setModalOpen(false); // Close modal after adding the quiz
     } catch (error) {
       console.error("Error adding quiz:", error);
     }
   };
 
-  const deleteSession = async () => {
+  // Update the quiz data
+  const updateQuiz = async () => {
+    if (!question.trim() || answers.some((a) => !a.trim())) {
+      console.error("Question and all answers must be filled");
+      return;
+    }
+
     try {
-      await axios.delete(`/api/sessions/${sessionId}`);
-      router.push("/");
+      const token = localStorage.getItem("token");
+      const response = await axios.put(
+        `http://localhost:5000/api/sessions/${sessionId}/quiz/${quizId}`,
+        {
+          question,
+          answers,
+          correctAnswerIndex,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Update session state with the edited quiz
+      setSession((prevSession) => {
+        if (prevSession) {
+          prevSession.quizzes = prevSession.quizzes.map((quiz) =>
+            quiz._id === quizId ? response.data.quiz : quiz
+          );
+        }
+        return prevSession;
+      });
+
+      setModalOpen(false); // Close modal after editing
     } catch (error) {
-      console.error("Error deleting session:", error);
+      console.error("Error updating quiz:", error);
     }
   };
 
+  // Delete quiz
+  const handleDeleteQuiz = async (quizId: string) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this quiz?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found, user may not be authenticated.");
+        return;
+      }
+
+      // Delete quiz from backend
+      await axios.delete(
+        `http://localhost:5000/api/sessions/${sessionId}/quiz/${quizId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log("Quiz deleted successfully");
+
+      // Refetch the session data after deleting the quiz
+      const { data } = await axios.get<Session>(
+        `http://localhost:5000/api/sessions/${sessionId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Update the session state with the latest session data
+      setSession(data);
+    } catch (error) {
+      console.error("Error deleting quiz:", error);
+    }
+  };
+
+  // Render the page
   return (
     <div className="p-4">
-      {session && (
+      {/* Display session name at the top */}
+      {session ? (
         <>
-          <h1 className="text-2xl font-bold mb-4">{session.title}</h1>
+          <h1 className="text-3xl font-semibold mb-6">{session.title}</h1>{" "}
+          {/* Session title */}
           <button
-            onClick={deleteSession}
-            className="bg-red-500 text-white px-4 py-2 rounded mb-4"
+            onClick={() => {
+              setEditMode(false); // Ensure it's in "add mode"
+              setQuestion(""); // Reset form fields
+              setAnswers(["", "", "", ""]); // Reset answers
+              setCorrectAnswerIndex(0); // Reset correct answer index
+              setModalOpen(true); // Open modal for adding quiz
+            }}
+            className="mt-6 px-4 py-2 cursor-pointer bg-blue-500 text-white rounded"
           >
-            Delete Session
+            Add Quiz
           </button>
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Enter question"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              className="border p-2 w-full"
-            />
-            {answers.map((answer, index) => (
-              <input
-                key={index}
-                type="text"
-                placeholder={`Answer ${index + 1}`}
-                value={answer}
-                onChange={(e) => {
-                  const newAnswers = [...answers];
-                  newAnswers[index] = e.target.value;
-                  setAnswers(newAnswers);
-                }}
-                className="border p-2 w-full mt-2"
-              />
-            ))}
-            <select
-              value={correctAnswerIndex}
-              onChange={(e) => setCorrectAnswerIndex(Number(e.target.value))}
-              className="border p-2 w-full mt-2"
-            >
-              {answers.map((_, index) => (
-                <option key={index} value={index}>
-                  Correct Answer {index + 1}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={addQuiz}
-              className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
-            >
-              Add Quiz
-            </button>
-          </div>
-          <div>
-            <h2 className="text-xl font-bold mb-2">Quizzes</h2>
+          {/* Modal for adding/editing a quiz */}
+          {modalOpen && (
+            <Modal onClose={() => setModalOpen(false)}>
+              <div className="relative">
+                <button
+                  onClick={() => setModalOpen(false)} // Close modal on click
+                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+                >
+                  <X size={20} />
+                </button>
+                <h2 className="text-xl font-bold mb-4">
+                  {editMode ? "Edit Quiz" : "Add a New Quiz"}
+                </h2>
+                <input
+                  type="text"
+                  placeholder="Enter question"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  className="w-full p-2 border rounded mb-4"
+                />
+                {answers.map((answer, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    placeholder={`Answer ${index + 1}`}
+                    value={answer}
+                    onChange={(e) => {
+                      const newAnswers = [...answers];
+                      newAnswers[index] = e.target.value;
+                      setAnswers(newAnswers);
+                    }}
+                    className="w-full p-2 border rounded mb-4"
+                  />
+                ))}
+                <select
+                  value={correctAnswerIndex}
+                  onChange={(e) =>
+                    setCorrectAnswerIndex(Number(e.target.value))
+                  }
+                  className="w-full p-2 border rounded mb-4"
+                >
+                  {answers.map((_, index) => (
+                    <option key={index} value={index}>
+                      Correct Answer {index + 1}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="w-full px-4 py-2 cursor-pointer bg-blue-500 text-white rounded"
+                  onClick={editMode ? updateQuiz : addQuiz}
+                >
+                  {editMode ? "Update Quiz" : "Add Quiz"}
+                </button>
+              </div>
+            </Modal>
+          )}
+          {/* Display quizzes */}
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold mb-4">Quizzes</h2>
             {session.quizzes.length > 0 ? (
               session.quizzes.map((quiz: Quiz) => (
-                <div key={quiz._id} className="border p-2 mt-2">
-                  <p className="font-bold">{quiz.question}</p>
-                  <ul className="list-disc ml-4">
-                    {quiz.answers.map((answer, index) => (
-                      <li
-                        key={index}
-                        className={
-                          index === quiz.correctAnswerIndex
-                            ? "text-green-600"
-                            : ""
-                        }
+                <div key={quiz._id} className="border p-4 rounded mb-4">
+                  <div className="flex justify-between">
+                    {/* Display only the question */}
+                    <p className="font-bold">{quiz.question}</p>
+                    {/* Edit and Delete icons for each quiz */}
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditQuiz(quiz)}
+                        className="text-blue-500 cursor-pointer"
                       >
-                        {answer}
-                      </li>
-                    ))}
-                  </ul>
+                        <Edit2 size={20} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteQuiz(quiz._id)}
+                        className="text-red-500 cursor-pointer"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ))
             ) : (
@@ -157,6 +306,8 @@ export default function QuizSession({ sessionId }: QuizSessionProps) {
             )}
           </div>
         </>
+      ) : (
+        <p>Loading session data...</p>
       )}
     </div>
   );

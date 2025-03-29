@@ -3,47 +3,6 @@ import generateLink from "../utils/generateLink.js";
 import Quiz from "../models/Quiz.js";
 
 // Create a new quiz session
-// export const createSession = async (req, res) => {
-//   try {
-//     const { title } = req.body;
-
-//     if (!title) {
-//       return res.status(400).json({ message: "Title is required" });
-//     }
-
-//     const session = new QuizSession({
-//       title,
-//       owner: req.user._id,
-//       quizzes: [],
-//     });
-
-//     await session.save();
-
-//     const sessionLink = generateLink(session._id);
-//     session.sessionLink = sessionLink;
-//     await session.save();
-
-//     res.status(201).json({
-//       message: "Quiz session created successfully",
-//       sessionLink,
-//       session,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// // Get all sessions for a particular user
-// export const getUserSessions = async (req, res) => {
-//   try {
-//     const sessions = await QuizSession.find({ owner: req.user._id });
-//     res.status(200).json(sessions);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// Create a new quiz session
 export const createSession = async (req, res) => {
   try {
     const { title } = req.body;
@@ -148,6 +107,8 @@ export const deleteQuizFromSession = async (req, res) => {
   try {
     const { sessionId, quizId } = req.params;
 
+    console.log("Deleting quiz", quizId, "from session", sessionId); // Log the IDs for debugging
+
     const session = await QuizSession.findById(sessionId);
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
@@ -162,13 +123,18 @@ export const deleteQuizFromSession = async (req, res) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    await quiz.remove();
+    // Delete the quiz directly using findByIdAndDelete
+    await Quiz.findByIdAndDelete(quizId); // Deletes the quiz by its ID
 
+    // Remove quiz from session's quizzes array
     session.quizzes = session.quizzes.filter((q) => q.toString() !== quizId);
     await session.save();
 
+    console.log("Quiz deleted successfully");
+
     res.status(200).json({ message: "Quiz deleted successfully" });
   } catch (error) {
+    console.error("Error deleting quiz:", error); // Log detailed error message
     res.status(500).json({ message: error.message });
   }
 };
@@ -220,31 +186,6 @@ export const editQuizInSession = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-// Delete a session and its associated quizzes
-// export const deleteSession = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const session = await QuizSession.findOne({ _id: id, owner: req.user._id });
-
-//     if (!session) {
-//       return res
-//         .status(404)
-//         .json({ message: "Session not found or unauthorized" });
-//     }
-
-//     await Quiz.deleteMany({ sessionId: id });
-
-//     await session.deleteOne();
-
-//     res
-//       .status(200)
-//       .json({ message: "Session and associated quizzes deleted successfully" });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 export const deleteSession = async (req, res) => {
   try {
