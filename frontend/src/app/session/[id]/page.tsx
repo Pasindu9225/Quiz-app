@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Modal from "@/components/quizmodal";
-import { Trash2, X, Edit2 } from "lucide-react"; // Added Edit and X for close icon
+import { Trash2, X, Edit2, Link2 } from "lucide-react"; // Added Link2 for the Copy Link icon
 
 interface Quiz {
   _id: string;
@@ -31,6 +31,7 @@ export default function QuizSession() {
   const [answers, setAnswers] = useState(["", "", "", ""]);
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
   const [quizId, setQuizId] = useState(""); // Store the quizId for the quiz being edited
+  const [sessionLink, setSessionLink] = useState<string | null>(null); // To store the generated session link
 
   // Fetch session data
   useEffect(() => {
@@ -66,17 +67,7 @@ export default function QuizSession() {
     fetchSession();
   }, [sessionId]);
 
-  // Open modal and set quiz data for editing
-  const handleEditQuiz = (quiz: Quiz) => {
-    setQuestion(quiz.question);
-    setAnswers(quiz.answers);
-    setCorrectAnswerIndex(quiz.correctAnswerIndex);
-    setQuizId(quiz._id);
-    setEditMode(true); // Set to edit mode
-    setModalOpen(true); // Open modal
-  };
-
-  // Add a new quiz to the session
+  // Handle Add Quiz Button
   const addQuiz = async () => {
     if (!question.trim() || answers.some((a) => !a.trim())) {
       console.error("Question and all answers must be filled");
@@ -120,43 +111,28 @@ export default function QuizSession() {
     }
   };
 
-  // Update the quiz data
-  const updateQuiz = async () => {
-    if (!question.trim() || answers.some((a) => !a.trim())) {
-      console.error("Question and all answers must be filled");
-      return;
+  // Handle Publish Button
+  const handlePublish = () => {
+    const link = `${window.location.origin}/session/${sessionId}`;
+    setSessionLink(link); // Set the generated link
+  };
+
+  // Handle Copy Link Button
+  const handleCopyLink = () => {
+    if (sessionLink) {
+      navigator.clipboard.writeText(sessionLink);
+      alert("Session link copied to clipboard!");
     }
+  };
 
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.put(
-        `http://localhost:5000/api/sessions/${sessionId}/quiz/${quizId}`,
-        {
-          question,
-          answers,
-          correctAnswerIndex,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      // Update session state with the edited quiz
-      setSession((prevSession) => {
-        if (prevSession) {
-          prevSession.quizzes = prevSession.quizzes.map((quiz) =>
-            quiz._id === quizId ? response.data.quiz : quiz
-          );
-        }
-        return prevSession;
-      });
-
-      setModalOpen(false); // Close modal after editing
-    } catch (error) {
-      console.error("Error updating quiz:", error);
-    }
+  // Handle Edit Quiz
+  const handleEditQuiz = (quiz: Quiz) => {
+    setQuestion(quiz.question);
+    setAnswers(quiz.answers);
+    setCorrectAnswerIndex(quiz.correctAnswerIndex);
+    setQuizId(quiz._id);
+    setEditMode(true); // Set to edit mode
+    setModalOpen(true); // Open modal
   };
 
   // Delete quiz
@@ -267,16 +243,15 @@ export default function QuizSession() {
                 </select>
                 <button
                   className="w-full px-4 py-2 cursor-pointer bg-blue-500 text-white rounded"
-                  onClick={editMode ? updateQuiz : addQuiz}
+                  onClick={editMode ? addQuiz : addQuiz}
                 >
                   {editMode ? "Update Quiz" : "Add Quiz"}
                 </button>
               </div>
             </Modal>
           )}
-          {/* Display quizzes */}
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-4">Quizzes</h2>
+          {/* Display quizzes in a 5-column grid */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {session.quizzes.length > 0 ? (
               session.quizzes.map((quiz: Quiz) => (
                 <div key={quiz._id} className="border p-4 rounded mb-4">
@@ -305,6 +280,24 @@ export default function QuizSession() {
               <p>No quizzes added yet.</p>
             )}
           </div>
+          {/* Publish Button */}
+          <button
+            onClick={handlePublish}
+            className="mt-6 px-4 py-2 bg-green-500 text-white rounded"
+          >
+            Publish
+          </button>
+          {/* Copy Link Button */}
+          {sessionLink && (
+            <div className="mt-4">
+              <button
+                onClick={handleCopyLink}
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+              >
+                Copy Link
+              </button>
+            </div>
+          )}
         </>
       ) : (
         <p>Loading session data...</p>
