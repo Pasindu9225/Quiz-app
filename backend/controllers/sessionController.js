@@ -1,6 +1,7 @@
 import QuizSession from "../models/Session.js";
 import generateLink from "../utils/generateLink.js";
 import Quiz from "../models/Quiz.js";
+import UserAnswer from "../models/UserAnswer.js";
 
 // Create a new quiz session
 export const createSession = async (req, res) => {
@@ -213,6 +214,38 @@ export const deleteSession = async (req, res) => {
       .json({ message: "Session and associated quizzes deleted successfully" });
   } catch (error) {
     console.error("Error deleting session:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const submitUserAnswer = async (req, res) => {
+  try {
+    const { sessionId, quizId, selectedAnswerIndex } = req.body;
+    const { userId } = req.user; // Get the logged-in user's ID from the request
+
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ message: "Quiz not found" });
+    }
+
+    // Check if the user's answer is correct
+    const isCorrect = quiz.correctAnswerIndex === selectedAnswerIndex;
+
+    // Store the user's answer
+    const userAnswer = new UserAnswer({
+      sessionId,
+      quizId,
+      userId,
+      selectedAnswerIndex,
+      isCorrect,
+    });
+
+    await userAnswer.save();
+
+    res
+      .status(201)
+      .json({ message: "Answer recorded successfully", userAnswer });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

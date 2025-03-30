@@ -13,19 +13,19 @@ interface Quiz {
 
 export default function SubmitQuiz() {
   const [sessionId, setSessionId] = useState<string>("");
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]); // Initialize quizzes as an empty array
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [correctAnswers, setCorrectAnswers] = useState<number>(0);
-  const [marks, setMarks] = useState<number | null>(null); // Marks at the end
-  const [isQuizStarted, setIsQuizStarted] = useState(false); // Whether quiz has started or not
+  const [marks, setMarks] = useState<number | null>(null);
+  const [isQuizStarted, setIsQuizStarted] = useState(false);
 
   const router = useRouter();
 
   // Fetch quizzes for a session
   const fetchQuizzes = async () => {
     try {
-      if (!sessionId) return; // Don't fetch if sessionId is empty
+      if (!sessionId) return;
       const token = localStorage.getItem("token");
       if (!token) {
         console.error("Token not found. Redirecting to login...");
@@ -42,7 +42,9 @@ export default function SubmitQuiz() {
         }
       );
 
-      // Ensure quizzes data is set correctly
+      // Check if quizzes are fetched and log the data
+      console.log("Fetched quizzes:", response.data);
+
       if (Array.isArray(response.data)) {
         setQuizzes(response.data);
       } else {
@@ -59,8 +61,8 @@ export default function SubmitQuiz() {
       alert("Please enter a valid session ID.");
       return;
     }
-    fetchQuizzes(); // Fetch quizzes when starting the quiz
-    setIsQuizStarted(true); // Start the quiz
+    fetchQuizzes();
+    setIsQuizStarted(true);
   };
 
   // Handle answer selection
@@ -75,23 +77,19 @@ export default function SubmitQuiz() {
       return;
     }
 
-    // Check if the answer is correct
     if (selectedAnswer === quizzes[currentQuestionIndex].correctAnswerIndex) {
       setCorrectAnswers((prev) => prev + 1);
     }
 
-    // Move to the next question
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex < quizzes.length) {
       setCurrentQuestionIndex(nextIndex);
-      setSelectedAnswer(null); // Reset selected answer for next question
+      setSelectedAnswer(null);
     } else {
-      // End of quiz, calculate total marks
       setMarks(correctAnswers);
     }
   };
 
-  // Render the page
   return (
     <div className="p-4">
       {!isQuizStarted ? (
@@ -113,8 +111,7 @@ export default function SubmitQuiz() {
         </div>
       ) : marks === null ? (
         <div>
-          {/* Ensure quizzes is available and map over them only if quizzes is not empty */}
-          {quizzes.length > 0 && (
+          {quizzes.length > 0 ? (
             <>
               <h1 className="text-3xl font-semibold mb-6">
                 {quizzes[currentQuestionIndex]?.question}
@@ -143,6 +140,8 @@ export default function SubmitQuiz() {
                 Submit Answer
               </button>
             </>
+          ) : (
+            <p>Loading quizzes...</p>
           )}
         </div>
       ) : (
