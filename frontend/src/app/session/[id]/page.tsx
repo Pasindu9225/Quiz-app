@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Modal from "@/components/quizmodal";
-import { Trash2, X, Edit2, Link2 } from "lucide-react"; // Added Link2 for the Copy Link icon
+import { Trash2, X, Edit2 } from "lucide-react"; // Added Link2 for the Copy Link icon
 
 interface Quiz {
   _id: string;
@@ -30,8 +30,8 @@ export default function QuizSession() {
   const [question, setQuestion] = useState("");
   const [answers, setAnswers] = useState(["", "", "", ""]);
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(0);
-  const [quizId, setQuizId] = useState(""); // Store the quizId for the quiz being edited
-  const [sessionLink, setSessionLink] = useState<string | null>(null); // To store the generated session link
+  const [quizId, setQuizId] = useState("");
+  const [sessionLink, setSessionLink] = useState<string | null>(null);
 
   // Fetch session data
   useEffect(() => {
