@@ -249,3 +249,19 @@ export const submitUserAnswer = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// // Get a specific quiz by ID
+// export const getQuizById = async (req, res) => {
+//   try {
+//     const { quizId } = req.params;
+//     const quiz = await Quiz.findById(quizId);
+
+//     if (!quiz) {
+//       return res.status(404).json({ message: "Quiz not found" });
+//     }
+
+//     res.status(200).json(quiz);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };

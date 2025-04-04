@@ -9,6 +9,7 @@ import {
   viewAllQuizzes,
   editQuizInSession,
   submitUserAnswer,
+  // getQuizById,
 } from "../controllers/sessionController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -30,5 +31,6 @@ router.delete(
 router.get("/:sessionId/quizzes", authMiddleware, viewAllQuizzes);
 router.put("/:sessionId/quiz/:quizId", authMiddleware, editQuizInSession);
 router.post("/submit-answer", authMiddleware, submitUserAnswer);
+// app.get("/api/quizzes/:quizId", getQuizById);
 
 export default router;

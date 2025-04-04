@@ -5,14 +5,18 @@ import axios from "axios";
 import { useParams } from "next/navigation"; // Correctly access route parameters
 
 export default function SubmitQuiz() {
-  const { id: sessionId } = useParams(); // Access the dynamic route parameter using useParams
-  const [quizIds, setQuizIds] = useState<string[]>([]); // Array to hold quiz IDs
+  const { id: sessionId } = useParams<{ id: string }>();
+  const [quizzes, setQuizzes] = useState<string[]>([]);
   const [isQuizLoaded, setIsQuizLoaded] = useState(false);
 
-  // Fetch quiz IDs function
   const fetchQuizzes = async () => {
     try {
-      if (!sessionId) return;
+      if (!sessionId) {
+        console.error("Session ID is missing.");
+        return;
+      }
+
+      console.log("Fetching quizzes for session:", sessionId);
 
       const token = localStorage.getItem("token");
       if (!token) {
@@ -20,7 +24,7 @@ export default function SubmitQuiz() {
         return;
       }
 
-      const response = await axios.get(
+      const response = await axios.get<{ data: string[] }>(
         `http://localhost:5000/api/sessions/${sessionId}/quizzes`,
         {
           headers: {
@@ -29,20 +33,23 @@ export default function SubmitQuiz() {
         }
       );
 
-      console.log("Fetched response data:", response.data);
+      console.log("Fetched quiz IDs:", response.data);
 
       if (Array.isArray(response.data)) {
-        setQuizIds(response.data); // Set quiz IDs
+        setQuizzes(response.data);
         setIsQuizLoaded(true);
       } else {
         console.error("Fetched quizzes data is not in the expected format.");
       }
     } catch (error) {
       console.error("Error fetching quizzes:", error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("Response error status:", error.response.status);
+        console.error("Response error data:", error.response.data);
+      }
     }
   };
 
-  // Trigger fetching quizzes when the sessionId is available
   useEffect(() => {
     if (sessionId) {
       fetchQuizzes();
@@ -57,10 +64,10 @@ export default function SubmitQuiz() {
         </div>
       ) : (
         <div>
-          {quizIds.length > 0 ? (
-            quizIds.map((quizId) => (
+          {quizzes.length > 0 ? (
+            quizzes.map((quizId) => (
               <div key={quizId} className="mb-6">
-                <h2 className="text-xl font-semibold">Quiz ID: {quizId}</h2>
+                <h1 className="text-xl font-semibold">Quiz ID: {quizId}</h1>
               </div>
             ))
           ) : (
